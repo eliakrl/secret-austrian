@@ -1,0 +1,14 @@
+# Render Blueprint: one free Node web service that builds the client and runs the game server.
+# Render sets PORT; server/index.js already reads it.
+services:
+  - type: web
+    name: secret-austrian
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/info
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "22"

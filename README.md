@@ -46,3 +46,10 @@ Reconnects: refreshing a phone or the host screen puts you back in your seat. Ro
 ## Attribution
 
 Based on [Secret Hitler](https://www.secrethitler.com/) by Goat, Wolf, & Cabbage, licensed under [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/). This project is non-commercial and shared under the same license.
+
+## Deployment
+
+Live at **https://austrian.eliakarl.com** once set up. Hosted on Render's free tier (`render.yaml`), with the domain and proxy on Cloudflare.
+
+- Every push to `main` auto-deploys. A deploy restarts the server and **ends any running game** (rooms live in memory), so don't merge to `main` during a game night.
+- The free server sleeps after 15 min without traffic; the first visit then takes about a minute to wake it. Open the host page a minute before playing.
