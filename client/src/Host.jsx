@@ -5,6 +5,9 @@ import { Board, statusText, nameOf } from './shared.jsx';
 import { MIN_PLAYERS, MAX_PLAYERS } from '../../shared/rules.js';
 import { THEME, ROLE_NAMES } from '../../shared/theme.js';
 
+// Open /host?test to get bot controls. Hidden rather than secured: bots only affect that one room.
+const TEST_MODE = new URLSearchParams(window.location.search).has('test');
+
 export default function Host() {
   const [state, setState] = useState(null);
   const [error, setError] = useState(null);
@@ -48,7 +51,13 @@ export default function Host() {
       {state.game ? (
         <HostGame game={state.game} onReset={() => run('game:reset')} />
       ) : (
-        <Lobby room={state.room} onStart={() => run('game:start')} onKick={(id) => run('room:kick', { playerId: id })} onNewRoom={newRoom} />
+        <Lobby
+          room={state.room}
+          onStart={() => run('game:start')}
+          onKick={(id) => run('room:kick', { playerId: id })}
+          onAddBots={(count) => run('room:addBots', { count })}
+          onNewRoom={newRoom}
+        />
       )}
     </div>
   );
@@ -65,7 +74,7 @@ function useJoinUrl(code) {
   return `${origin}/?room=${code}`;
 }
 
-function Lobby({ room, onStart, onKick, onNewRoom }) {
+function Lobby({ room, onStart, onKick, onAddBots, onNewRoom }) {
   const url = useJoinUrl(room.code);
   const n = room.players.length;
   const canStart = n >= MIN_PLAYERS && n <= MAX_PLAYERS;
@@ -81,13 +90,21 @@ function Lobby({ room, onStart, onKick, onNewRoom }) {
         <h2>Players <span className="muted">{n}/{MAX_PLAYERS}</span></h2>
         {n === 0 && <p className="muted">Waiting for players to join…</p>}
         <ul className="player-list">
-          {room.players.map((p, i) => (
-            <li key={p.id} className={p.connected ? '' : 'offline'}>
-              <span>{p.name}{i === 0 && <em className="tag">can start</em>}</span>
+          {room.players.map((p) => (
+            <li key={p.id} className={`${p.connected ? '' : 'offline'}${p.bot ? ' bot' : ''}`}>
+              <span>{p.name}{p.id === room.vipId && <em className="tag">can start</em>}</span>
               <button className="link" onClick={() => onKick(p.id)} aria-label={`Remove ${p.name}`}>Remove</button>
             </li>
           ))}
         </ul>
+        {TEST_MODE && (
+          <div className="test-tools">
+            <p className="eyebrow">Test mode</p>
+            <button className="secondary" disabled={n >= MAX_PLAYERS} onClick={() => onAddBots(1)}>Add bot</button>
+            <button className="secondary" disabled={n >= MIN_PLAYERS} onClick={() => onAddBots(MIN_PLAYERS - n)}>Fill to {MIN_PLAYERS}</button>
+            <button className="secondary" disabled={n >= MAX_PLAYERS} onClick={() => onAddBots(MAX_PLAYERS - n)}>Fill to {MAX_PLAYERS}</button>
+          </div>
+        )}
         <button className="primary" disabled={!canStart} onClick={onStart}>
           {canStart ? 'Start game' : `Need ${MIN_PLAYERS}–${MAX_PLAYERS} players`}
         </button>
@@ -120,6 +137,7 @@ function HostGame({ game, onReset }) {
             </p>
           )}
           {game.phase === 'gameover' && <button className="primary" onClick={onReset}>Back to lobby</button>}
+          {TEST_MODE && game.phase !== 'gameover' && <button className="secondary" onClick={onReset}>End game (test)</button>}
         </section>
         <section className="log">
           <p className="eyebrow">History</p>

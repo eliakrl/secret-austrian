@@ -6,9 +6,12 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { Server } from 'socket.io';
 import { createGame, act, publicView, playerView, GameError } from './game.js';
-import { createRoom, getRoom, addPlayer, findPlayer, removePlayer, sweep, RoomError } from './rooms.js';
+import { createRoom, getRoom, addPlayer, addBot, findPlayer, removePlayer, sweep, RoomError } from './rooms.js';
+import { botAction } from './bots.js';
+import { MAX_PLAYERS } from '../shared/rules.js';
 
 const PORT = Number(process.env.PORT) || 3001;
+const BOT_DELAY_MS = Number(process.env.BOT_DELAY_MS) || 900;
 const app = express();
 const server = createServer(app);
 const io = new Server(server);
@@ -31,11 +34,14 @@ if (existsSync(dist)) {
 
 // ---------------------------------------------------------------- state push
 
+// The first human to join can start and reset the game from their phone.
+const vipOf = (room) => room.players.find((p) => !p.bot)?.id ?? null;
+
 function roomSummary(room) {
   return {
     code: room.code,
-    players: room.players.map((p) => ({ id: p.id, name: p.name, connected: p.sockets > 0 })),
-    vipId: room.players[0]?.id ?? null, // first to join can start the game from their phone
+    players: room.players.map((p) => ({ id: p.id, name: p.name, bot: Boolean(p.bot), connected: p.bot || p.sockets > 0 })),
+    vipId: vipOf(room),
     started: Boolean(room.game),
   };
 }
@@ -52,6 +58,34 @@ function broadcast(room) {
       game: room.game && playerView(room.game, p.id),
     });
   }
+  scheduleBots(room);
+}
+
+// Test mode: bots move one at a time, each move triggering a broadcast that schedules the next.
+function scheduleBots(room) {
+  if (room.botTimer || !room.game || room.game.phase === 'gameover') return;
+  const ready = room.players.filter((p) => p.bot && botAction(playerView(room.game, p.id), p.id));
+  if (!ready.length) return;
+  const delay = room.game.phase === 'vote' ? BOT_DELAY_MS / 3 : BOT_DELAY_MS;
+  room.botTimer = setTimeout(() => {
+    room.botTimer = null;
+    if (!room.game) return;
+    const bot = ready[Math.floor(Math.random() * ready.length)];
+    const action = botAction(playerView(room.game, bot.id), bot.id); // state may have changed meanwhile
+    if (action) {
+      try {
+        act(room.game, bot.id, action);
+      } catch (err) {
+        console.error(`bot ${bot.name} move failed:`, err.message);
+      }
+    }
+    broadcast(room);
+  }, delay);
+}
+
+function stopBots(room) {
+  clearTimeout(room.botTimer);
+  room.botTimer = null;
 }
 
 // ---------------------------------------------------------------- sockets
@@ -86,7 +120,7 @@ io.on('connection', (socket) => {
     broadcast(room);
   }
 
-  const isVip = () => session?.kind === 'player' && session.room.players[0]?.id === session.player.id;
+  const isVip = () => session?.kind === 'player' && vipOf(session.room) === session.player.id;
   function needControl() {
     if (!session || !(session.kind === 'host' || isVip())) throw new RoomError('Only the host can do that');
     return session.room;
@@ -150,6 +184,14 @@ io.on('connection', (socket) => {
     broadcast(room);
   });
 
+  on('room:addBots', ({ count = 1 }) => {
+    if (session?.kind !== 'host') throw new RoomError('Only the host screen can add bots');
+    const room = session.room;
+    const n = Math.max(1, Math.min(Number(count) || 1, MAX_PLAYERS - room.players.length));
+    for (let i = 0; i < n; i++) addBot(room);
+    broadcast(room);
+  });
+
   on('game:start', () => {
     const room = needControl();
     if (room.game) throw new RoomError('The game already started');
@@ -159,6 +201,7 @@ io.on('connection', (socket) => {
 
   on('game:reset', () => {
     const room = needControl();
+    stopBots(room);
     room.game = null;
     broadcast(room);
   });
