@@ -15,6 +15,9 @@ export const TRACKER_LIMIT = 3; // failed elections before the top policy is for
 // Number of fascists (not counting the leader) per player count.
 export const FASCISTS_BY_COUNT = { 5: 1, 6: 1, 7: 2, 8: 2, 9: 3, 10: 3 };
 
+// Which printed fascist board is used: 5-6, 7-8 or 9-10 players.
+export const boardSize = (playerCount) => (playerCount <= 6 ? '5-6' : playerCount <= 8 ? '7-8' : '9-10');
+
 // Presidential power unlocked by each fascist policy slot (index 0 = first policy).
 export function fascistTrack(playerCount) {
   if (playerCount <= 6) return [null, null, 'peek', 'execute', 'execute', null];

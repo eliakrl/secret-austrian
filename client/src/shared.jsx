@@ -1,6 +1,12 @@
 // Pieces used by both the host screen and phones.
-import { LIBERALS_TO_WIN, LEADER_ZONE, VETO_UNLOCK, TRACKER_LIMIT } from '../../shared/rules.js';
-import { THEME, POWER_NAMES, POWER_VERBS } from '../../shared/theme.js';
+import { boardSize } from '../../shared/rules.js';
+import { THEME, POWER_VERBS } from '../../shared/theme.js';
+import liberalBoard from './assets/boards/liberal.webp';
+import fascist56 from './assets/boards/fascist-5-6.webp';
+import fascist78 from './assets/boards/fascist-7-8.webp';
+import fascist910 from './assets/boards/fascist-9-10.webp';
+
+const FASCIST_BOARDS = { '5-6': fascist56, '7-8': fascist78, '9-10': fascist910 };
 
 export const nameOf = (game, id) => game.players.find((p) => p.id === id)?.name ?? '?';
 
@@ -34,50 +40,45 @@ export function PolicyCard({ policy, small }) {
   );
 }
 
-function Track({ kind, count, slots }) {
-  return (
-    <div className={`track track-${kind}`}>
-      <div className="track-label">{kind === 'liberal' ? `${THEME.liberal}s` : `${THEME.fascist}s`}</div>
-      <div className="track-slots">
-        {slots.map((slot, i) => (
-          <div key={i} className={`slot${slot.danger ? ' danger' : ''}`}>
-            {i < count ? (
-              <PolicyCard policy={kind} small />
-            ) : (
-              <div className="slot-empty">
-                {slot.label && <span>{slot.label}</span>}
-                {slot.last && <span className="slot-win">Win</span>}
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
+// Slot geometry, as fractions of the board photos (all four are 2000x667).
+const IMG_W = 2000;
+const IMG_H = 667;
+const pct = (v, total) => `${(v / total) * 100}%`;
+const box = (x0, x1, y0, y1) => ({ left: pct(x0, IMG_W), width: pct(x1 - x0, IMG_W), top: pct(y0, IMG_H), height: pct(y1 - y0, IMG_H) });
+
+const FASCIST_SLOT_W = 286.8;
+const fascistSlots = Array.from({ length: 6 }, (_, i) => box(137 + i * FASCIST_SLOT_W, 137 + (i + 1) * FASCIST_SLOT_W, 135, 528));
+const LIBERAL_EDGES = [268, 562, 853, 1140, 1430, 1748];
+const liberalSlots = LIBERAL_EDGES.slice(0, -1).map((x, i) => box(x, LIBERAL_EDGES[i + 1], 132, 532));
+const TRACKER_X = [685, 881, 1077, 1275]; // the four circles printed on the liberal board
+const TRACKER_Y = 585;
+
+function BoardCards({ kind, count, slots }) {
+  return slots.slice(0, count).map((style, i) => (
+    <div key={i} className="board-slot" style={style}>
+      <PolicyCard policy={kind} small />
     </div>
-  );
+  ));
 }
 
 export function Board({ game }) {
-  const liberalSlots = Array.from({ length: LIBERALS_TO_WIN }, (_, i) => ({ last: i === LIBERALS_TO_WIN - 1 }));
-  const fascistSlots = game.track.map((power, i) => ({
-    label: [power && POWER_NAMES[power], i + 1 === VETO_UNLOCK && 'Veto unlocked'].filter(Boolean).join(' · '),
-    danger: i >= LEADER_ZONE,
-    last: i === game.track.length - 1,
-  }));
+  const fascistImage = FASCIST_BOARDS[boardSize(game.players.length)];
   return (
     <div className="board">
-      <Track kind="liberal" count={game.liberal} slots={liberalSlots} />
-      <Track kind="fascist" count={game.fascist} slots={fascistSlots} />
-      <div className="board-footer">
-        <div className="tracker">
-          <span>Election tracker</span>
-          {Array.from({ length: TRACKER_LIMIT }, (_, i) => (
-            <span key={i} className={`dot${i < game.tracker ? ' on' : ''}`} />
-          ))}
-        </div>
-        <div className="piles">
-          <span>Draw pile <b>{game.deckCount}</b></span>
-          <span>Discard <b>{game.discardCount}</b></span>
-        </div>
+      <div className="board-art board-liberal">
+        <img src={liberalBoard} alt={`${THEME.liberal} board`} draggable="false" />
+        <BoardCards kind="liberal" count={game.liberal} slots={liberalSlots} />
+        <span className="pile-count" style={{ left: pct(95, IMG_W), top: pct(150, IMG_H) }} aria-label="Draw pile">{game.deckCount}</span>
+        <span className="pile-count" style={{ left: pct(1905, IMG_W), top: pct(150, IMG_H) }} aria-label="Discard pile">{game.discardCount}</span>
+        <span
+          className="tracker-token"
+          style={{ left: pct(TRACKER_X[Math.min(game.tracker, TRACKER_X.length - 1)], IMG_W), top: pct(TRACKER_Y, IMG_H) }}
+          aria-label={`Election tracker ${game.tracker}`}
+        />
+      </div>
+      <div className="board-art board-fascist">
+        <img src={fascistImage} alt={`${THEME.fascist} board`} draggable="false" />
+        <BoardCards kind="fascist" count={game.fascist} slots={fascistSlots} />
       </div>
     </div>
   );
