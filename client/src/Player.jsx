@@ -92,27 +92,28 @@ function JoinScreen({ onJoin, onRejoin }) {
 
   return (
     <main className="join">
-      <h1>{THEME.title}</h1>
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          onJoin(code, name);
-        }}
-      >
-        <label>
-          Room code
-          <input value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} maxLength={4} autoCapitalize="characters" autoComplete="off" placeholder="ABCD" />
-        </label>
-        <label>
-          Your name
-          <input value={name} onChange={(e) => setName(e.target.value)} maxLength={16} autoComplete="nickname" placeholder="Name" />
-        </label>
-        <button className="primary" disabled={code.length !== 4 || !name.trim()}>Join</button>
-      </form>
-      {remembered && (
-        <button className="secondary" onClick={() => onRejoin(remembered)}>Rejoin room {remembered.code}</button>
-      )}
-      <a className="link" href="/host">Host a game on this screen</a>
+      <div className="menu-card">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            onJoin(code, name);
+          }}
+        >
+          <label>
+            Room code
+            <input value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} maxLength={4} autoCapitalize="characters" autoComplete="off" placeholder="ABCD" />
+          </label>
+          <label>
+            Your name
+            <input value={name} onChange={(e) => setName(e.target.value)} maxLength={16} autoComplete="nickname" placeholder="Name" />
+          </label>
+          <button className="primary" disabled={code.length !== 4 || !name.trim()}>Join</button>
+        </form>
+        {remembered && (
+          <button className="secondary" onClick={() => onRejoin(remembered)}>Rejoin room {remembered.code}</button>
+        )}
+        <a className="link" href="/host">Host a game on this screen</a>
+      </div>
     </main>
   );
 }
@@ -123,18 +124,20 @@ function PhoneLobby({ state, onStart, onLeave }) {
   const n = room.players.length;
   return (
     <main className="phone-lobby">
-      <p className="eyebrow">Room {room.code}</p>
-      <h2>You’re in, {meName}</h2>
-      <p className="muted">{n} player{n === 1 ? '' : 's'} joined. Keep this screen open.</p>
-      <ul className="player-list compact">
-        {room.players.map((p) => <li key={p.id}>{p.name}</li>)}
-      </ul>
-      {isVip && (
-        <button className="primary" disabled={n < MIN_PLAYERS} onClick={onStart}>
-          {n < MIN_PLAYERS ? `Waiting for ${MIN_PLAYERS - n} more` : 'Everyone’s in, start'}
-        </button>
-      )}
-      <button className="link" onClick={onLeave}>Leave room</button>
+      <div className="menu-card">
+        <p className="eyebrow">Room {room.code}</p>
+        <h2>You’re in, {meName}</h2>
+        <p className="muted">{n} player{n === 1 ? '' : 's'} joined. Keep this screen open.</p>
+        <ul className="player-list compact">
+          {room.players.map((p) => <li key={p.id}>{p.name}</li>)}
+        </ul>
+        {isVip && (
+          <button className="primary" disabled={n < MIN_PLAYERS} onClick={onStart}>
+            {n < MIN_PLAYERS ? `Waiting for ${MIN_PLAYERS - n} more` : 'Everyone’s in, start'}
+          </button>
+        )}
+        <button className="link" onClick={onLeave}>Leave room</button>
+      </div>
     </main>
   );
 }

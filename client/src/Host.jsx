@@ -40,9 +40,8 @@ export default function Host() {
   if (!state) return <div className="host center"><p className="muted">{error ?? 'Opening a room…'}</p></div>;
 
   return (
-    <div className="host">
+    <div className={`host${state.game ? '' : ' host-menu'}`}>
       <header className="host-header">
-        <h1>{THEME.title}</h1>
         <div className="room-code">Room <b>{state.room.code}</b></div>
       </header>
       {error && <div className="error">{error}</div>}
