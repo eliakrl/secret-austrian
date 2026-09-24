@@ -3,6 +3,7 @@
 // Join with your own phone first if you want to play alongside them.
 
 import { io } from 'socket.io-client';
+import { botAction } from '../server/bots.js';
 
 const [code, countArg = '5', delayArg = '700'] = process.argv.slice(2).filter((a) => !a.startsWith('--'));
 const autoStart = process.argv.includes('--start');
@@ -12,7 +13,6 @@ if (!code) {
   process.exit(1);
 }
 
-const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const NAMES = ['Anna', 'Bruno', 'Clara', 'Dieter', 'Elsa', 'Franz', 'Greta', 'Hans', 'Ilse', 'Jonas'];
 
@@ -40,21 +40,7 @@ function bot(name) {
     if (busy || key === lastKey || !me.alive || game.phase === 'gameover') return;
     lastKey = key;
 
-    const isPres = meId === game.presidentId;
-    const others = game.players.filter((p) => p.alive && p.id !== meId).map((p) => p.id);
-    let action = null;
-    if (game.phase === 'vote' && me.myVote === null) action = { type: 'vote', ja: Math.random() < 0.65 };
-    else if (game.phase === 'nominate' && isPres) action = { type: 'nominate', targetId: pick(me.eligible) };
-    else if (me.hand && game.phase === 'legislative_president') action = { type: 'discard', index: Math.floor(Math.random() * 3) };
-    else if (me.hand && game.phase === 'legislative_chancellor') {
-      action = me.canVeto && Math.random() < 0.3 ? { type: 'veto' } : { type: 'enact', index: Math.floor(Math.random() * 2) };
-    } else if (game.phase === 'veto' && isPres) action = { type: 'vetoResponse', accept: Math.random() < 0.5 };
-    else if (game.phase === 'executive' && isPres) {
-      const { power } = me;
-      if (power.type === 'peek' || power.result) action = { type: 'done' };
-      else if (power.type === 'investigate') action = { type: 'investigate', targetId: pick(others.filter((id) => !power.investigated.includes(id))) };
-      else action = { type: power.type, targetId: pick(others) };
-    }
+    const action = botAction(game, meId);
     if (!action) return;
 
     busy = true;

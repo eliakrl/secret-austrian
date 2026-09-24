@@ -12,7 +12,8 @@ A *Secret Hitler* clone you play like Jackbox. One person opens a room on a shar
 - The server owns all game state, so nobody can cheat by inspecting the page.
 - Refreshing a phone or the host screen puts you back in your seat.
 - 15 tests, including one that plays 3,000 random full games and checks nothing breaks.
-- Bots for testing alone: `npm run bots -- ABCD 6` adds 6 bots to room ABCD.
+- Bots for testing alone: open the host screen as `/host?test` and use *Fill to 5* (bots are played by the server), or `npm run bots -- ABCD 6` from a terminal.
+- Live at **https://austrian.eliakarl.com** (Render free tier, auto-deploys from `main`).
 - One full 7-player game was played start to finish through the actual UI.
 
 ## Get it running (about 2 minutes)

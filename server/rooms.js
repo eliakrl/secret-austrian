@@ -43,8 +43,20 @@ export function addPlayer(room, rawName) {
   return player;
 }
 
+const BOT_NAMES = ['Anna', 'Bruno', 'Clara', 'Dieter', 'Elsa', 'Franz', 'Greta', 'Hans', 'Ilse', 'Jonas', 'Karl'];
+
+// Test mode: a bot is a player with no phone; the server plays its turns.
+export function addBot(room) {
+  const taken = new Set(room.players.map((p) => p.name.toLowerCase()));
+  const base = BOT_NAMES.find((n) => !taken.has(`🤖 ${n}`.toLowerCase())) ?? `Bot${room.players.length}`;
+  const player = addPlayer(room, `🤖 ${base}`);
+  player.bot = true;
+  player.token = null; // nobody can resume into a bot seat
+  return player;
+}
+
 export function findPlayer(room, id, playerToken) {
-  const player = room.players.find((p) => p.id === id && p.token === playerToken);
+  const player = room.players.find((p) => p.token && p.id === id && p.token === playerToken);
   if (!player) throw new RoomError('Could not rejoin. Join again with your name.');
   return player;
 }

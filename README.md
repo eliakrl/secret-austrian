@@ -17,6 +17,10 @@ Production-style: `npm run build && npm start`, then everything runs on http://l
 
 ## Testing without 5 friends
 
+**Test mode (easiest):** open the host screen as **`/host?test`** (e.g. https://austrian.eliakarl.com/host?test). The lobby gets *Add bot / Fill to 5 / Fill to 10* buttons, and an *End game (test)* button during play. Bots are played by the server, so join with your phone, fill the rest with bots, and play. Bot speed: `BOT_DELAY_MS` env var (default 900).
+
+**Script bots** (from your own terminal, against any server):
+
 ```bash
 npm run bots -- ABCD 4          # add 4 bots to room ABCD (join with your own phone/tab first)
 npm run bots -- ABCD 7 500 --start   # 7 bots, 500 ms per move, start automatically
@@ -37,7 +41,8 @@ Each browser tab is its own player, so you can also open several tabs of http://
 | `shared/theme.js` | All names shown to players (roles, parties, powers). Rename things here. |
 | `client/src/Host.jsx` | Host screen: lobby with QR, board, status, history, seats. |
 | `client/src/Player.jsx` | Phone: join, secret role card, voting, policy cards, presidential powers. |
-| `scripts/bots.js` | Random-move bots for testing. |
+| `server/bots.js` | Bot move logic (random legal moves), used by test mode and the script. |
+| `scripts/bots.js` | Script that connects bots over sockets, for testing. |
 
 The server is the only source of truth. Phones never receive another player's role or cards unless the rules allow it (fascist teammates, investigation results), so nobody can cheat by inspecting the page.
 
